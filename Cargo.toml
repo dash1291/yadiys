@@ -1,0 +1,8 @@
+[package]
+name = "sonic-top"
+version = "0.1.0"
+authors = ["Ashish Dubey <ashish.dubey91@gmail.com>"]
+edition = "2018"
+
+[dependencies]
+portaudio = "0.7.0"
