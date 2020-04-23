@@ -1,6 +1,6 @@
 pub struct Oscillator {
     frequency: f32,
-    current_phase: f32,
+    current_phase: f32
 }
 
 impl Oscillator {
@@ -14,4 +14,10 @@ impl Oscillator {
             outbuf[i] = f32::sin(2. * 3.14159265 * self.current_phase);
         }
     }
+
+    pub fn set_frequency(&mut self, frequency: f32) {
+        self.frequency = frequency
+    }
+
+    
 }

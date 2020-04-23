@@ -1,5 +1,8 @@
 pub mod oscillator;
+pub mod synth;
+
 use crate::oscillator::Oscillator;
+use crate::synth::Synth;
 
 extern crate portaudio;
 
@@ -33,20 +36,22 @@ fn run() -> Result<(), pa::Error> {
     let frequency = 440.;
     let mut settings =
         pa.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER)?;
+  
     // we won't output out of range samples so don't bother clipping them.
     settings.flags = pa::stream_flags::CLIP_OFF;
 
     // This routine will be called by the PortAudio engine when audio is needed. It may called at
     // interrupt level on some machines so don't do anything that could mess up the system like
     // dynamic resource allocation or IO.
-    let mut osc = Oscillator::new(880.);
-    
-    let callback = move |pa::OutputStreamCallbackArgs { buffer, frames, .. }| {
-        osc.output(buffer, frames);
 
+    let mut synth = Synth::new();
+
+    let callback = move |pa::OutputStreamCallbackArgs { buffer, frames, .. }| {
+        synth.play_note();
+        synth.output(buffer, frames);
         pa::Continue
     };
-
+   
     let mut stream = pa.open_non_blocking_stream(settings, callback)?;
 
     stream.start()?;
