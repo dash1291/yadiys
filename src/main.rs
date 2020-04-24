@@ -47,7 +47,7 @@ fn run() -> Result<(), pa::Error> {
     let mut synth = Synth::new();
 
     let callback = move |pa::OutputStreamCallbackArgs { buffer, frames, .. }| {
-        synth.play_note();
+        synth.play_note(75);
         synth.output(buffer, frames);
         pa::Continue
     };
