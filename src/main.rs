@@ -3,8 +3,8 @@ pub mod synth;
 
 use crate::oscillator::Oscillator;
 use crate::synth::Synth;
-
 extern crate portaudio;
+extern crate portmidi as pm;
 
 use portaudio as pa;
 use std::f64::consts::PI;
@@ -36,22 +36,34 @@ fn run() -> Result<(), pa::Error> {
     let frequency = 440.;
     let mut settings =
         pa.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER)?;
-  
+
     // we won't output out of range samples so don't bother clipping them.
-    settings.flags = pa::stream_flags::CLIP_OFF;
+    // settings.flags = pa::stream_flags::CLIP_OFF;
 
     // This routine will be called by the PortAudio engine when audio is needed. It may called at
     // interrupt level on some machines so don't do anything that could mess up the system like
     // dynamic resource allocation or IO.
 
     let mut synth = Synth::new();
+    let mut synth2 = Synth::new();
+
+    let context = pm::PortMidi::new().unwrap();
+
+    // get the device info for the given id
+    let info = context.device(0).unwrap();
+    println!("Listening on: {}) {}", info.id(), info.name());
+
+    // get the device's input port
+    let in_port = context.input_port(info, 1024).unwrap();
 
     let callback = move |pa::OutputStreamCallbackArgs { buffer, frames, .. }| {
-        synth.play_note(75);
+        if let Ok(Some(event)) = in_port.read_n(1024) {
+            synth.play_note(event[0].message.data1);
+        }
         synth.output(buffer, frames);
         pa::Continue
     };
-   
+
     let mut stream = pa.open_non_blocking_stream(settings, callback)?;
 
     stream.start()?;
