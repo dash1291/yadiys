@@ -58,8 +58,13 @@ fn run() -> Result<(), pa::Error> {
 
     let callback = move |pa::OutputStreamCallbackArgs { buffer, frames, .. }| {
         if let Ok(Some(event)) = in_port.read_n(1024) {
-            synth.play_note(event[0].message.data1);
+            if event[0].message.status == 144 {
+                synth.trigger_attack(event[0].message.data1);
+            } else {
+                synth.trigger_release();
+            }
         }
+
         synth.output(buffer, frames);
         pa::Continue
     };

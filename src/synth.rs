@@ -9,18 +9,31 @@ impl Synth {
     pub fn new() -> Synth {
         return Synth {
             oscillator: Oscillator::new(440.),
-            volume: 1.,
+            volume: 0.,
         };
     }
 
-    pub fn play_note(&mut self, midi_note: u8) {
+    pub fn set_note(&mut self, midi_note: u8) {
         let freq = 440. * f32::powf(2., (midi_note as f32 - 69.) / 12.);
         self.oscillator.set_frequency(freq);
     }
 
+    pub fn trigger_attack(&mut self, midi_note: u8) {
+        self.set_volume(1.);
+        self.set_note(midi_note);
+    }
+
+    pub fn trigger_release(&mut self) {
+        self.set_volume(0.);
+    }
+
     pub fn output(&mut self, outbuf: &mut [f32], size: usize) {
         for i in 0..size {
-            outbuf[i] = 5.0 * self.oscillator.output();
+            if self.volume > 0. {
+                outbuf[i] = 5.0 * self.oscillator.output();
+            } else {
+                outbuf[i] = 0.;
+            }
         }
     }
 
