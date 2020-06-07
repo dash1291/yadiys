@@ -4,65 +4,56 @@ pub mod synth;
 use crate::oscillator::Oscillator;
 use crate::synth::Synth;
 
-extern crate portaudio;
+extern crate portaudio_rs as portaudio;
 
-use portaudio as pa;
-use std::f64::consts::PI;
+static SECONDS: usize = 1;
 
-const CHANNELS: i32 = 1;
-const NUM_SECONDS: i32 = 5;
-const SAMPLE_RATE: f64 = 44_100.0;
-const FRAMES_PER_BUFFER: u32 = 64;
-const TABLE_SIZE: usize = 200;
+fn main()
+{
+    portaudio::initialize().unwrap();
+    print_devs();
+    println!("{:?}", demo());
+    portaudio::terminate().unwrap();
+}
 
-fn main() {
-    match run() {
-        Ok(_) => {}
-        e => {
-            eprintln!("Example failed with the following: {:?}", e);
+fn print_devs()
+{
+    for i in 0 .. portaudio::device::get_count().unwrap()
+    {
+        match portaudio::device::get_info(i)
+        {
+            None => {},
+            Some(info) => println!("{}: {}", i, info.name),
         }
     }
 }
 
-fn run() -> Result<(), pa::Error> {
-    println!(
-        "PortAudio Test: output sine wave. SR = {}, BufSize = {}",
-        SAMPLE_RATE, FRAMES_PER_BUFFER
-    );
-
-    let pa = pa::PortAudio::new()?;
-
-    let mut phase = 0.;
-    let frequency = 440.;
-    let mut settings =
-        pa.default_output_stream_settings(CHANNELS, SAMPLE_RATE, FRAMES_PER_BUFFER)?;
-  
-    // we won't output out of range samples so don't bother clipping them.
-    settings.flags = pa::stream_flags::CLIP_OFF;
-
-    // This routine will be called by the PortAudio engine when audio is needed. It may called at
-    // interrupt level on some machines so don't do anything that could mess up the system like
-    // dynamic resource allocation or IO.
-
-    let mut synth = Synth::new();
-
-    let callback = move |pa::OutputStreamCallbackArgs { buffer, frames, .. }| {
-        synth.play_note(75);
-        synth.output(buffer, frames);
-        pa::Continue
-    };
-   
-    let mut stream = pa.open_non_blocking_stream(settings, callback)?;
+fn demo() -> portaudio::PaResult
+{
+    let stream = portaudio::stream::Stream::open_default(0, 1, 44100.0, portaudio::stream::FRAMES_PER_BUFFER_UNSPECIFIED, None)?;
 
     stream.start()?;
 
-    println!("Play for {} seconds.", NUM_SECONDS);
-    pa.sleep(NUM_SECONDS * 1_000);
+    let mut phase = 0.0f32;
+    let mut buffer = Vec::with_capacity(44100 * SECONDS);
+    buffer = vec![0.; 44100*SECONDS];
+    let mut synth = Synth::new();
 
-    stream.stop()?;
-    stream.close()?;
+    synth.play_note(69);
+    synth.output(&mut buffer, 44100 * SECONDS);
 
-    println!("Test finished.");
+
+    let waiter = std::thread::spawn(move|| {
+        std::thread::sleep(std::time::Duration::from_secs(SECONDS as u64));
+    });
+
+    match stream.write(&*buffer)
+    {
+        Err(e) => { println!("write 1: Err({:?})", e); },
+        Ok(()) => {},
+    }
+
+    let _ = waiter.join();
 
     Ok(())
 }

@@ -15,7 +15,7 @@ impl Synth {
         self.oscillator.set_frequency(freq);
     }
 
-    pub fn output(&mut self, outbuf: &mut [f32], size: usize) {
+    pub fn output(&mut self, outbuf: &mut Vec<f32>, size: usize) {
         self.oscillator.output(outbuf, size);
     }
 
