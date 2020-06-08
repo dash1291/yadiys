@@ -6,3 +6,5 @@ edition = "2018"
 
 [dependencies]
 portaudio-rs = "0.3.2"
+portmidi = "0.2.4"
+
