@@ -28,12 +28,8 @@ impl Synth {
     }
 
     pub fn output(&mut self, outbuf: &mut [f32], size: usize) {
-        for i in 0..size {
-            if self.volume > 0. {
-                outbuf[i] = 5.0 * self.oscillator.output();
-            } else {
-                outbuf[i] = 0.;
-            }
+        for i in 0..(size) {
+            outbuf[i] = self.volume * self.oscillator.output();
         }
     }
 
