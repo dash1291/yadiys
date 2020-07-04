@@ -1,35 +1,84 @@
 use crate::oscillator::Oscillator;
 
 pub struct Synth {
-    oscillator: Oscillator,
+    oscillators: Vec<Oscillator>,
     volume: f32,
+    attack_time: Vec<f32>,
+    release_time: Vec<f32>,
+    attack_interval: f32,
+    release_interval: f32,
+    next_oscillator: usize,
+    notes: Vec<u8>
 }
 
 impl Synth {
     pub fn new() -> Synth {
         return Synth {
-            oscillator: Oscillator::new(440.),
-            volume: 0.,
+            oscillators: vec![Oscillator::new(440.), Oscillator::new(440.), Oscillator::new(440.)],
+            volume: 1.,
+            attack_time: vec![-1.0, -1.0, -1.0],
+            release_time: vec![-1.0, -1.0, -1.0],
+            notes: vec![69, 69, 69],
+            attack_interval: 0.500,
+            release_interval: 0.500,
+            next_oscillator: 0
         };
     }
 
     pub fn set_note(&mut self, midi_note: u8) {
         let freq = 440. * f32::powf(2., (midi_note as f32 - 69.) / 12.);
-        self.oscillator.set_frequency(freq);
+        self.oscillators[self.next_oscillator].set_frequency(freq);
+        self.notes[self.next_oscillator] = midi_note;
     }
 
     pub fn trigger_attack(&mut self, midi_note: u8) {
-        self.set_volume(1.);
+        //self.set_volume(1.);
+
         self.set_note(midi_note);
+
+        self.attack_time[self.next_oscillator] = 0.;
+        self.release_time[self.next_oscillator] = -1.;
+
+        self.next_oscillator = (self.next_oscillator + 1) % 3;
     }
 
-    pub fn trigger_release(&mut self) {
-        self.set_volume(0.);
+    pub fn trigger_release(&mut self, midi_note: u8) {
+        //self.set_volume(0.);
+        for j in 0..(self.notes.len()) {
+            if (self.notes[j] == midi_note) {
+                self.attack_time[j] = -1.;
+                self.release_time[j] = 0.
+            }
+        }
     }
 
     pub fn output(&mut self, outbuf: &mut [f32], size: usize) {
         for i in 0..(size) {
-            outbuf[i] = self.volume * self.oscillator.output();
+            outbuf[i] = 0.;
+        
+            for j in 0..(self.oscillators.len()) {
+                if (self.attack_time[j] >= 0.) {
+                    self.attack_time[j] = self.attack_time[j] + (1. / 44100.);
+
+                    self.oscillators[j].set_amplitude((self.attack_time[j] / self.attack_interval) * 1.0);
+
+                    if self.attack_time[j] > self.attack_interval {
+                        self.attack_time[j] = -1.;
+                    }
+
+                } else if (self.release_time[j] >= 0.) {
+                    self.release_time[j] = self.release_time[j] + (1. / 44100.) ;
+
+                    self.oscillators[j].set_amplitude(1. - ((self.release_time[j] / self.release_interval) * 1.0));
+
+                    if self.release_time[j] > self.release_interval {
+                        self.release_time[j] = -1.;
+                    }
+                }
+                outbuf[i] = outbuf[i] + self.oscillators[j].output();
+            }
+
+            outbuf[i] = self.volume * outbuf[i];
         }
     }
 

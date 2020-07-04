@@ -59,16 +59,17 @@ fn demo() -> portaudio::PaResult
                     println!("{:?}", event[0].message.data1);
                     synth.trigger_attack(event[0].message.data1);
                 } else {
-                    synth.trigger_release();
+                    synth.trigger_release(event[0].message.data1);
                 }
             }
-            // there is no blocking receive method in PortMidi, therefore
+            // there is no blocking receive method in PortMidi, therefores
             // we have to sleep some time to prevent a busy-wait loop
             
             synth.output(output, output.len());
     
             stream::StreamCallbackResult::Continue
         });
+
         let stream = portaudio::stream::Stream::open_default(0, 2, 44100.0, portaudio::stream::FRAMES_PER_BUFFER_UNSPECIFIED, Some(callback))?;
 
         stream.start()?;
