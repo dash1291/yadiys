@@ -1,7 +1,7 @@
 pub struct Oscillator {
     frequency: f32,
     current_phase: f32,
-    amplitude: f32
+    amplitude: f32,
 }
 
 impl Oscillator {

@@ -11,13 +11,17 @@ pub struct Synth {
     decay_interval: f32,
     next_oscillator: usize,
     notes: Vec<u8>,
-    sustain_value: f32
+    sustain_value: f32,
 }
 
 impl Synth {
     pub fn new() -> Synth {
         return Synth {
-            oscillators: vec![Oscillator::new(440.), Oscillator::new(440.), Oscillator::new(440.)],
+            oscillators: vec![
+                Oscillator::new(440.),
+                Oscillator::new(440.),
+                Oscillator::new(440.),
+            ],
             volume: 1.,
             attack_time: vec![-1.0, -1.0, -1.0],
             release_time: vec![-1.0, -1.0, -1.0],
@@ -27,7 +31,7 @@ impl Synth {
             attack_interval: 0.500,
             release_interval: 0.500,
             decay_interval: 0.5,
-            next_oscillator: 0
+            next_oscillator: 0,
         };
     }
 
@@ -38,7 +42,6 @@ impl Synth {
     }
 
     pub fn trigger_attack(&mut self, midi_note: u8) {
-
         self.set_note(midi_note);
 
         self.attack_time[self.next_oscillator] = 0.;
@@ -60,31 +63,38 @@ impl Synth {
     pub fn output(&mut self, outbuf: &mut [f32], size: usize) {
         for i in 0..(size) {
             outbuf[i] = 0.;
-        
+
             let amp_per_voice = 1. / (self.notes.len() as f32);
 
             for j in 0..(self.oscillators.len()) {
                 if (self.attack_time[j] >= 0.) {
                     self.attack_time[j] = self.attack_time[j] + (1. / 44100.);
 
-                    self.oscillators[j].set_amplitude((self.attack_time[j] / self.attack_interval) * amp_per_voice);
+                    self.oscillators[j].set_amplitude(
+                        (self.attack_time[j] / self.attack_interval) * amp_per_voice,
+                    );
 
                     if self.attack_time[j] > self.attack_interval {
                         self.attack_time[j] = -1.;
                     }
-
                 } else if (self.release_time[j] >= 0.) {
-                    self.release_time[j] = self.release_time[j] + (1. / 44100.) ;
+                    self.release_time[j] = self.release_time[j] + (1. / 44100.);
 
-                    self.oscillators[j].set_amplitude((1. - ((self.release_time[j] / self.release_interval))) * amp_per_voice);
+                    self.oscillators[j].set_amplitude(
+                        (1. - (self.release_time[j] / self.release_interval)) * amp_per_voice,
+                    );
 
                     if self.release_time[j] > self.release_interval {
                         self.release_time[j] = -1.;
                     }
                 } else if (self.decay_time[j] >= 0.) {
-                    self.decay_time[j] = self.decay_time[j] + (1. / 44100.) ;
+                    self.decay_time[j] = self.decay_time[j] + (1. / 44100.);
 
-                    self.oscillators[j].set_amplitude(self.sustain_value * (1. - ((self.decay_time[j] / self.decay_interval))) * amp_per_voice);
+                    self.oscillators[j].set_amplitude(
+                        self.sustain_value
+                            * (1. - (self.decay_time[j] / self.decay_interval))
+                            * amp_per_voice,
+                    );
 
                     if self.decay_time[j] > self.decay_interval {
                         self.decay_time[j] = -1.;
