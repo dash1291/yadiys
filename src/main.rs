@@ -3,6 +3,7 @@ pub mod synth;
 
 use crate::oscillator::Oscillator;
 use crate::synth::Synth;
+use std::env;
 use std::time::Duration;
 
 use std::thread;
@@ -16,7 +17,8 @@ static SECONDS: usize = 1;
 fn main() {
     portaudio::initialize().unwrap();
     print_devs();
-    println!("{:?}", demo());
+    let args: Vec<String> = env::args().collect();
+    println!("{:?}", demo(args[1].parse().unwrap()));
     portaudio::terminate().unwrap();
 }
 
@@ -29,7 +31,13 @@ fn print_devs() {
     }
 }
 
-fn demo() -> portaudio::PaResult {
+fn print_midi_devices(pm: &pm::PortMidi) {
+    for dev in pm.devices().unwrap() {
+        println!("{}", dev);
+    }
+}
+
+fn demo(midi_device_id: i32) -> portaudio::PaResult {
     let mut phase = 0.0f32;
     let mut buffer = Vec::with_capacity(44100 * SECONDS);
     buffer = vec![0.; 44100 * SECONDS];
@@ -39,7 +47,8 @@ fn demo() -> portaudio::PaResult {
     let context = pm::PortMidi::new().unwrap();
 
     // get the device info for the given id
-    let info = context.device(0).unwrap();
+    print_midi_devices(&context);
+    let info = context.device(midi_device_id).unwrap();
     println!("Listening on: {}) {}", info.id(), info.name());
 
     let in_port = context.input_port(info, 1024).unwrap();
